@@ -1,0 +1,226 @@
+% !TeX root = ../main.tex
+% -*- coding: utf-8 -*-
+
+
+\chapter{相关研究综述}
+\label{chpt:relatedwork}
+
+\section{强化学习基本框架}
+
+在强化学习中，我们将问题背景划分为“决策者”和“环境”两个部分，其中，“决策者”指算法模型本身，“环境”指决策者以外的信息集合。
+
+环境随时间会发生改变，每个时间下都是特定的“状态”，所有可能出现的状态组成的集合称为“状态空间”，记作 $\mathcal S$ ，而在时刻 $t$ 对应的状态记作 $S_t\in \mathcal S$ 。
+
+在每个状态下，决策者可以根据环境状态的信息来采取“行动”，将某个状态 $s$ 下所有可采取的行动组成的集合称为“状态 $s$ 下的行动空间”，记作 $\mathcal{A}(s)$ ，特别地，将 $t$ 时刻 $s$ 状态下的特定行动记作 $A_t\in\mathcal{A}(s)$ 。
+
+决策者采取行动 $A_t$ 后，会对环境产生影响，环境则会因此发生改变，由本时刻的状态 $S_t$ 进入下一时刻的状态 $S_{t+1}$ ，同时对决策者刚才的行为 $A_t$ 产生一个评价性反馈传递给决策者，我们将这样的评价性反馈称为“奖励”，记作 $R_{t}\in\mathcal{R}\subset\mathbb{R}$ ，其中 $\mathcal{R}$ 为“奖励空间”，表示所有可能的奖励值组成的集合。
+
+决策者收到环境传来的奖励 $R_{t}$ 后，将能得知刚才的行动 $A_t$ 的客观评价，从而根据该信息来调整自己的“决策策略”，并用于进行下一轮行为决策。而决策的调整，则是强化学习里的重要研究对象。简单而言，调整策略的核心思想是要最大化总收益，即将奖励值的累积求和最大化。
+
+这里引入“回报值”的概念，它是总收益值的一个更规范的描述。定义 $t$ 时刻之后的回报值为 $G_t$ ，其表达式为
+
+\begin{equation}
+G_t = R_{t+1}+R_{t+2}+R_{t+3}+\cdots
+\end{equation}
+
+特别地，将强化学习问题分为两种类型：片段型和连续型。片段型问题指整体的问题能够分解为存在起始状态和终止状态，步骤有限的片段，这些片段各自均有着相似结构，但不一定完全相同。比如纸牌游戏的一轮牌局就是一个片段，而多轮牌局的整体则构成整体问题背景。连续型问题则指那些不能分解为子片段的，持续连贯的问题。
+
+在两种问题类型下，回报值 $G_t$ 的公式需做一些调整才能合理。对于片段型问题，从 $t$ 时刻开始，设其所处片段的终止状态对应的时刻为 $T$ ，则应定义
+
+\begin{equation}
+G_t = R_{t+1}+R_{t+2}+R_{t+3}+\cdots+R_T
+\end{equation}
+
+而对于连续型问题，若简单地将奖励值直接相加，显然会使 $G_t$ 趋于无穷，这将导致无法比较不同行动 $A_t$ 的效果。考虑将 $G_t$ 定义为
+
+\begin{equation}
+G_t = R_{t+1}+\gamma R_{t+2}+\gamma^2 R_{t+3}+\cdots = \sum_{k=0}^{\infty}\gamma^kR_{t+k+1}
+\end{equation}
+
+其中 $\gamma(0\leq \gamma \leq 1)$ 为“削减率”，其直观效果是将观测信息的重点集中在较近时刻的奖励值上。
+
+\section{Markov 决策过程}
+
+强化学习的目标是：学习出能由状态信息决定最佳行动的决策策略\cite{sutton2018reinforcement}。状态信息包含了实时信息和一定的历史信息，而显然历史信息不能太过庞大，否则会严重影响学习效率，此时考虑引入 Markov 性质，将问题的模型表示为 Markov 决策过程\cite{howard1960dynamic}，这样便能将“历史状态信息”通过状态的转移概率分布体现出来\cite{ross1996stochastic}。
+
+\subsection{Markov 性质}
+
+记全部历史信息的联合概率分布为
+
+\begin{equation}
+    \mathrm{Pr}\{S_{t+1}=s',R_{t+1}=r|S_0,A_0,R_1,\ldots,S_{t-1},A_{t-1},R_t,S_t,A_t\}
+\end{equation}
+
+记环境的状态转移概率分布为
+
+\begin{equation}
+    p(s',r|,s,a) = \mathrm{Pr}\{S_{t+1}=s',R_{t+1}=r|S_t=s,A_t=a\}
+\end{equation}
+
+若有 $p(s',r|s,a) = \mathrm{Pr}\{S_{t+1}=s',R_{t+1}=r|S_0,A_0,R_1,\ldots,S_t,A_t\}$ ，则称这样的问题具有 {\jiacu Markov 性质}。
+
+通过引入 Markov 性质，决策者每次进行决策时只需考虑当前状态，因为历史信息也包含在了当前状态之中。
+
+称一个强化学习问题为 Markov 决策过程，当前仅当这个强化学习问题满足 Markov 性质\cite{sutton2018reinforcement}\cite{howard1960dynamic}。
+
+根据之前的定义，$p(s',r|s,a) =\mathrm{Pr}\left\{S_t=s',R_t=r|S_{t-1}=s,A_{t-1}=a\right\}$ ，且有 $\sum_{s'\in\mathcal{S}}\sum_{r\in\mathcal{R}}p(s',r|s,a)=1$ 。
+
+其中，$p(s',r|s,a)$ 表示决策者在处于状态 $s$ 时做出行动 $a$ 的条件下，进入下一个状态 $s'$ 并收到奖励值反馈 $r$ 的概率分布。
+
+后面的讨论中，如无特殊说明，我们都假定问题是基于 Markov 性质的。
+
+\subsection{状态价值函数与行为价值函数}
+
+强化学习的核心是通过对行动的评价来调整决策策略，我们需要将行动的评价以及决策策略都定义为函数，才能进行进一步的具体分析。
+
+记概率空间为 $\mathcal P$ ，将策略函数定义为映射：$\pi:\mathcal{S}\times\mathcal{A}\to \mathcal{P}$ 。特别地，条件概率 $\pi(a|s)$ 表示决策者在状态 $s$ 时选择行动 $a$ 的概率分布。
+
+确定了策略 $\pi$ 后，我们定义状态值函数：
+
+\begin{equation}
+    v_{\pi}(s) =\mathbb{E}_{\pi}\left[G_t|S_t=s\right]=\mathbb{E}_{\pi}\left[\sum_{k=0}^{\infty}\gamma^kR_{t+k+1}\mid S_t=s\right], \forall s \in \mathcal{S}
+\end{equation}
+
+以及行动值函数：
+
+\begin{equation}
+    q_{\pi}(s,a) =\mathbb{E}_{\pi}\left[G_t|S_t=s,A_t=a\right]=\mathbb{E}_{\pi}\left[\sum_{k=0}^{\infty}\gamma^kR_{t+k+1}\mid S_t=s,A_t=a\right]
+\end{equation}
+
+$v_\pi(s)$ 表示从状态 $s$ 开始，决策者之后若完全遵守策略 $\pi$ 来采取行动，所能得到的期望回报值。而 $q_\pi(s,a)$ 表示在状态 $s$ 下，已经采取了某个行动 $a$ ，之后若完全遵守策略 $\pi$ 采取行动，所能得到的期望回报值。
+
+\section{基于 Bellman 最优方程的强化学习算法}
+
+\subsection{Bellman 最优方程}
+
+\begin{Theorem}
+    在有限马尔可夫决策过程中，当前状态 $s$ 与未来所有可能状态 $s'$ 满足 Bellman 方程关系，即
+    \begin{equation}
+        v_{\pi}(s) = \sum_a\pi(a|s)\sum_{s',r}p(s',r|s,a)\left[r+\gamma v_\pi(s') \right]
+    \end{equation}
+\end{Theorem}
+
+\begin{proof}
+    \[
+    \begin{aligned} v_\pi(s) & = \mathbb{E}_\pi[G_t\,|\,S_t=s] \\ &=\mathbb{E}_\pi \left[\sum_{k=0}^\infty\gamma^kR_{t+k+1}\,|\,S_t=s \right] \\ &= \mathbb{E}_\pi \left [R_{t+1}+\gamma\sum_{k=0}^\infty\gamma^kR_{t+k+2}\,|\,S_t=s \right] \\ &=\sum_a\pi(a|s)\sum_{s'}\sum_rp(s',r|s,a)\left[r+\gamma \mathbb{E}_\pi \left[\sum_{k=0}^\infty\gamma^kR_{t+k+2}\,|\,S_{t+1}=s' \right] \right] \\ &= \sum_a\pi(a|s)\sum_{s',r}p(s',r|s,a)\left[r+\gamma v_\pi(s') \right], \qquad \forall s \in \mathcal S \end{aligned}
+    \]
+\end{proof}
+
+强化学习问题的目标是找到解决问题的最优策略，而其前提是得到最优策略对应的价值函数，才能根据这个价值函数推出最优策略。
+
+\begin{Definition}
+    至少存在一个策略优于其他所有策略，称满足这一条件的策略为\textbf{最优策略}，其对应的价值函数 $v_*(s)$ 和 $q_*(s,a)$ 分别称为{最优状态值函数}，\textbf{最优行动值函数}。
+\end{Definition}
+
+在该定义的基础上，可以得到 Bellman 最优方程\cite{howard1960dynamic}。
+
+\begin{Theorem}
+    $v_*$ 作为价值函数时，状态 $s$ 与未来所有可能状态 $s'$ 满足 Bellman 最优方程关系，即
+    \begin{equation}
+        v_*(s)=\max_{a}\sum_{s',r}p(s',r \mid s,a)[r+\gamma v_*(s')]
+    \end{equation}
+\end{Theorem}
+
+\begin{proof}
+     \[
+    \begin{aligned}v_*(s) &= \max_{a\in \mathcal A(s)}q_{\pi_*}(s,a) \\ &=\max_a \mathbb{E}_{\pi_*} \left[G_t \mid S_t=s, A_t=a \right] \\ &= \max_a \mathbb{E}_{\pi_*} \left[\sum_{k=0}^\infty \gamma^kR_{t+k+1} \mid S_t=s,A_t=a \right] \\ &= \max_a \mathbb{E}_{\pi_*} \left[R_{t+1}+\gamma \sum_{k=0}^\infty\gamma^kR_{t+k+2}\mid S_t=s,A_t=a \right] \\ &= \max_a \mathbb{E}[R_{t+1}+\gamma v_*(S_{t+1}) \mid S_t=s,A_t=a] \\ &=\max_{a}\sum_{s',r}p(s',r \mid s,a)[r+\gamma v_*(s')]\end{aligned}
+    \]
+\end{proof}
+
+Bellman 最优方程的行动价值函数形式为
+
+\begin{equation}
+    q_*(s,a) = \sum_{s',r}p(s',r \mid s,a)\left[r+\gamma \max_{a'}q_*(s',a') \right]
+\end{equation}
+
+\begin{Definition}
+    显然存在至少一个行动，其行动价值函数值能取到 $v_*$，记该行动为 $a_*$，如果一个策略只将非零概率分配给这些行动，称这个策略是最优策略。
+\end{Definition}
+
+至此，已经得到一个最基本的强化学习算法：求解 Bellman 最优方程得到最优价值函数 $v_*$ 和 $q_*$ ，根据最优价值函数确定出最优策略。但由于 Bellman 方程较为复杂，直接求解计算难度较大，所以在实际中并不实用，需要对其进行一定的改进。
+
+\subsection{迭代法近似求解 Bellman 方程}
+
+为了提升求解 Bellman 方程的效率，考虑采用 Jocobi 迭代法\cite{2007numanalysis}。Jacobi 迭代法的收敛条件为
+
+\begin{Theorem}\label{the:jacobi}
+    对于方程组 $\boldsymbol{x}_{k+1} = \boldsymbol{Cx}_{k}+\boldsymbol{b}$ ，给定方程组的一个初始近似解 $\boldsymbol{x}_0$ ，由前式迭代产生的序列 $\boldsymbol{x}_0,\boldsymbol{x}_1,\boldsymbol{x}_2,\cdots,\boldsymbol{x}_k,\cdots$ 收敛的充分必要条件是矩阵 $\boldsymbol{C}$ 满足 $\lim\limits_{k \rightarrow \infty} \boldsymbol{C}^{k}=\boldsymbol{O}$ 。
+\end{Theorem}
+
+首先将 Bellman 方程改为迭代形式
+
+\begin{equation}\label{eq:itebellman}
+    v_{k+1}(s) = \sum_a\pi(a\mid s)\sum_{s',r}p(s',r \mid s,a)[r+\gamma v_k(s')]
+\end{equation}
+
+设状态空间 $\mathcal S$ 中有 $n$ 个不同的状态，则可将该 Bellman 迭代式具体展开为
+
+\begin{equation}
+    \begin{aligned}
+        v_{k+1}(s_1)=&c_{11}v_k(s_1)+c_{12}v_k(s_2)+\cdots+c_{1n}v_k(s_n)+b_1\\
+        v_{k+1}(s_2)= & c_{21}v_k(s_1)+c_{22}v_k(s_2)+\cdots+c_{2n}v_k(s_n)+b_2\\
+        &\vdots\\
+        v_{k+1}(s_n)= & c_{n1}v_k(s_1)+c_{n2}v_k(s_2)+\cdots+c_{nn}v_k(s_n)+b_n\\
+        \end{aligned}
+\end{equation}
+
+其中
+
+\begin{equation}
+    c_{ij} =\sum_a\pi(a\mid s_i)\sum_{s_j,r}p(s_j,r \mid s_i,a)\gamma =\gamma
+\end{equation}
+
+\begin{equation}
+    b_{i} =\sum_a\pi(a\mid s_i)\sum_{r}p(r\mid s_i,a)r
+\end{equation}
+
+记
+
+\begin{equation}
+    \boldsymbol{C} =
+    \left(\begin{array}{cccc}
+    c_{11} & c_{12} & \cdots & c_{1n} \\
+    c_{21} & c_{22} & \cdots & c_{2n} \\
+    \vdots & \vdots & \ddots & \vdots \\
+    c_{n1} & c_{n2} & \cdots & c_{nn}
+    \end{array}\right)
+\end{equation}
+
+则可简记 Bellman 迭代式的矩阵形式为
+
+\begin{equation}\label{eq:bellmaneq}
+    \boldsymbol{v_{k+1}} =\boldsymbol{Cv_k}+\boldsymbol{b}
+\end{equation}
+
+对于 Bellman 迭代式 \ref{eq:bellmaneq} ，由于 $0\leq\gamma<1$ ，显然有
+
+\begin{equation}
+    \lim_{k\rightarrow \infty} \boldsymbol{C}^k = \lim_{k\rightarrow \infty}\left(\begin{array}{cccc}
+    \gamma & \gamma & \cdots & \gamma \\
+    \gamma & \gamma & \cdots & \gamma \\
+    \vdots & \vdots & \ddots & \vdots \\
+    \gamma & \gamma & \cdots & \gamma
+    \end{array}\right)^k = \boldsymbol{O}
+\end{equation}
+
+因此由定理 \ref{the:jacobi} 可知，Bellman 迭代式 \ref{eq:itebellman} 可由 Jacobi 迭代法快速求解，并且解收敛。
+
+利用上述结果，我们可以给出一个基于 Bellman 迭代求解的强化学习算法：
+
+\begin{algorithm}[H]
+    \caption{基于 Bellman 迭代求解的强化学习算法}
+    \begin{algorithmic}[1] %每行显示行号
+        \State 初始化向量 $V(s), \forall s\in \mathcal S$
+        \Repeat
+        \State $\Delta\leftarrow 0$
+        \For{每个 $s\in\mathcal S$}
+        \State $v\leftarrow V(s)$
+        \State $V(s)\leftarrow \max_a\sum_{s',r}p(s',r|s,a)[r+\gamma V(s')]$
+        \State $\Delta \leftarrow \max(\Delta,|v-V(s)|)$
+        \EndFor
+        \Until{ $\Delta<\theta$}
+        \State
+        \State $\pi(s)=\arg\max_a\sum_{s',r}p(s',r|s,a)[r+\gamma V(s')]$
+        \State 输出策略 $\pi$
+    \end{algorithmic}
+\end{algorithm}
