@@ -30,7 +30,7 @@
 %\usepackage[emptydoublepage,English]{NKThesis} % 英文
 \usepackage{amssymb}
 %   根据需要选择 biblatex 宏包选项.
-\usepackage[backend = bibtex8, defernumbers = true,  sorting=none,  style = nkthesis]{biblatex}
+\usepackage[backend = biber, defernumbers = true,  sorting=none,  style = gb7714-2015]{biblatex}
 \hypersetup{colorlinks=true,
             pdfborder=0 0 1,
             citecolor=black,
@@ -40,6 +40,8 @@
 
 %%%%%%% My Settings %%%%%%%
 % \linespread{1.2}
+\usepackage{bm}
+\renewcommand\bibname{参考文献}
 \usepackage{setspace}
 \setstretch{1.2}
 \graphicspath{{image/}}
@@ -73,7 +75,7 @@
 \newtheorem{Proposition}[Theorem]{\hskip 2em 命题}
 \newtheorem{Definition}[Theorem]{\hskip 2em 定义}
 \newtheorem{Example}[Theorem]{\hskip 2em 例}
-\newcommand{\upcite}[1]{\textsuperscript{\textsuperscript{\cite{#1}}}}
+%\newcommand{\upcite}[1]{\textsuperscript{\textsuperscript{\cite{#1}}}}
 \begin{document}
 
 %  设置基本信息
