@@ -5,13 +5,13 @@
 
 \chapter{基于模拟采样的强化学习算法}
 
-在基于 Markov 性质的前提下，也即在 Markov 决策过程中，之前给出的基于迭代求解 Bellman 方程的强化学习算法非常简洁清晰，但该算法对环境条件的依赖性较强，同时还需要显示地知道环境的动态分布 $p(s',r|s,a)$ ，对于传统的“完全信息博弈”而言这一点非常容易满足，而对于更多的“不完全信息博弈”，我们并不能准确得知 $p(s',r|s,a)$ ，传统的强化学习算法很难克服这一问题\cite{sutton2018reinforcement}，所以需要在其基础上做进一步改进，通过模拟采样的方法来获取和近似估计回报值，避免对环境进行模型重建。
+基于 Markov 性质的前提，即在 Markov 决策过程中，之前给出的基于迭代求解 Bellman 方程的强化学习算法非常简洁清晰，但该算法对环境条件的依赖性较强，同时还需要显示地知道环境的动态分布 $p(s',r|s,a)$ ，对于传统的“完全信息博弈”而言这一点非常容易满足，但对于实际中更常见且更复杂的“不完全信息博弈”，我们并不能准确得知 $p(s',r|s,a)$ ，传统的强化学习算法很难克服这一问题\cite{sutton2018reinforcement}，所以需要在其基础上做进一步改进，通过模拟采样的方法来获取和近似估计回报值，避免对环境进行模型重建。
 
 \section{Monte Carlo 模拟}
 
 Monte Carlo 方法\cite{goodfellow2016deep}\cite{robert2013monte}也称统计模拟方法，上一章的基于解 Bellman 方程的强化学习算法，由于依赖环境动态信息 $p(s',r|s,a)$ ，在不完全信息下无法得到此式，仅适合处理传统的完全信息问题，但借由 Monte Carlo 模拟方法，可以通过模拟和采样来近似地获得环境信息，进而也能使用强化学习来解决不完全信息问题。
 
-在未知 $p(s',r|a,s)$ 的情况下，算法不能使用的根本原因在于无法计算 Bellman 方程 \ref{eq:bellmaneq} 中的 $\sum_{s',r}p(s',r|s,a)[r+\gamma v(s')]$ ，即无法清晰地预知未来的状态与反馈信息，其核心在于每一步的奖励值 $r$ 无法取得，而如果采用 Monte Carlo 方法进行模拟，我们可以进行大量模拟实验，通过计算样本回报值的均值，便能有效解决这一点。
+在未知 $p(s',r|a,s)$ 的情况下，算法不能使用的根本原因在于无法计算 Bellman 方程 \ref{eq:bellmaneq} 中的 $\sum_{s',r}p(s',r|s,a)[r+\gamma v(s')]$ ，即无法清晰地预知未来的状态与反馈信息，其核心在于每一步的奖励值 $r$ 无法取得，而如果采用 Monte Carlo 方法进行模拟，可以进行大量模拟实验，通过计算样本回报值的均值，便能有效解决这一点。
 
 记某个回合中通过模拟得到的反馈数据序列为 $\left\{R_0, R_1, R_2, \ldots, R_T\right\}$ ，在这一回合中，可计算出时刻 $t$ 对应的回报值
 
@@ -19,7 +19,7 @@ Monte Carlo 方法\cite{goodfellow2016deep}\cite{robert2013monte}也称统计模
     G_t = R_{t+1} + \gamma R_{t+2} + \gamma^2 R_{t+3} + \cdots + \gamma^{T-t-1} R_T
 \end{equation}
 
-计算 Monte Carlo 模拟获得的回报值均值，可以作为价值函数的估计，即可得到基于 Monte Carlo 模拟的强化学习算法。
+计算 Monte Carlo 模拟获得的回报值均值，可以作为价值函数的估计，即可得到基于 Monte Carlo 模拟的强化学习算法：
 
 \begin{algorithm}[H]
     \caption{基于 Monte Carlo 模拟的强化学习算法}
@@ -55,27 +55,32 @@ Monte Carlo 算法的价值函数更新式为
     V(S_t)\leftarrow V(S_t)+\alpha\left[G_t-V(S_t)\right]
 \end{equation}
 
-在 Monte Carlo 算法中，由于需要等待一个完整的片段结束，得到每个时间点的奖励值 $R_t$，才能返回到之前各时间点求得对应的回报值 $G_t = R_{t+1}+R_{t+2}+R_{t+3}+\cdots+R_T$ 。这一缺点限制了算法的使用场景，其高延迟使得算法无法处理实时学习问题，而 Monte Carlo 本身需要等待一个完整回合结束的特点也导致无法处理连续型问题。
+在 Monte Carlo 算法中，由于需要等待一个完整的片段结束，得到每个时间点的奖励值 $R_t$，才能返回到之前各时间点求得对应的回报值 $G_t = R_{t+1}+\gamma R_{t+2}+\gamma^2 R_{t+3}+\cdots+\gamma^{T-t-1} R_T$ 。这一缺点限制了算法的使用场景，其高延迟使得算法无法处理实时学习问题，而 Monte Carlo 本身需要等待一个完整回合结束的特点也导致无法处理连续型问题。
 
-为了能够做到实时更新，即需要在每个时间点 $t$ 得到当前反馈奖励值 $R_t$ 时能够即使更新，而非累积足够多反馈奖励值才去更新，故考虑结合统计学中的 Bootstrap 思想\cite{efron1994introduction}\cite{2014wzjstatistics}，利用“重抽样”的思想来尽可能利用信息价值，根据当前时刻 $t$ 下的信息进行一定程度的“再利用”，使用估计值来替换 $G_t$
+为了能够做到实时更新，即需要在每个时间点 $t$ 得到当前反馈奖励值 $R_t$ 时能够即使更新，而非累积足够多反馈奖励值才去更新，故考虑结合统计学中的 Bootstrap 思想\cite{efron1994introduction}\cite{2014wzjstatistics}，利用“重抽样”的思想来尽可能利用信息价值，根据当前时刻 $t$ 下的信息进行一定程度的“再利用”，使用估计值来替换 $G_t$ 。
 
 具体地，记 $\widehat{V}(S_{t})$ 表示 $V({S_t})$ 的一个估计值，则有
 
-\begin{equation}
+\begin{equation}\label{eq:vhat}
     \widehat{V}(S_{t+1}) \approx R_{t+2} + \gamma R_{t+3} + \gamma^2 R_{t+4} + \cdots
 \end{equation}
 
 从而可得到
 
-\begin{equation}\label{eq:replacegt}
+\begin{equation}\label{eq:toreplacegt}
     \begin{aligned}
         G_t &= R_{t+1}+\gamma R_{t+2}+\gamma^2 R_{t+3}+\gamma^3 R_{t+4}+\cdots\\
-        &=R_{t+1}+\gamma\left[R_{t+2}+\gamma R_{t+3}+\gamma^2 R_{t+4}+\cdots\right]\\
-        &\approx R_{t+1} +\gamma \widehat{V}(S_{t+1})
+        &=R_{t+1}+\gamma\left[R_{t+2}+\gamma R_{t+3}+\gamma^2 R_{t+4}+\cdots\right]
     \end{aligned}
 \end{equation}
 
-将\ref{eq:replacegt}式代入更新式\ref{eq:mcupdate}中，可得到改进后的更新式
+将\ref{eq:vhat}代入\ref{eq:toreplacegt}可得
+
+\begin{equation}\label{eq:replacedgt}
+    G_t \approx R_{t+1} +\gamma \widehat{V}(S_{t+1})
+\end{equation}
+
+将\ref{eq:replacedgt}式代入更新式\ref{eq:mcupdate}中，可得到改进后的更新式
 
 \begin{equation}\label{eq:tdupdate}
     V(S_t)\leftarrow V(S_t)+\alpha\left[R_{t+1}+\gamma \widehat{V}(S_{t+1})-V(S_t)\right]
@@ -85,19 +90,19 @@ Monte Carlo 算法的价值函数更新式为
 
 \subsection{Q-Learning 算法}
 
-可将时序差分算法\ref{eq:tdupdate}中状态价值函数 $V$ 改为行动价值函数 $Q$ ，写作
+将时序差分算法更新式\ref{eq:tdupdate}中的状态价值函数 $V(s)$ 改为行动价值函数 $Q(s,a)$ ，写作
 
 \begin{equation}
     Q(S_t,A_t)\leftarrow Q(S_t,A_t)+\alpha\left[R_{t+1}+\gamma \widehat{Q}(S_{t+1},A_{t+1})-Q(S_t,A_t)\right]
 \end{equation}
 
-在时序差分学习的实际应用中，需要为价值函数 $\widehat{Q}(S_t,A_t)$ 指定一个具体的估计值。而在更新过程中，后一次行动的决策更倾向于选择前一次价值 $Q$ 更大的行动，因此最直观的考虑是选取 $\max_a Q_{old}(S_t,a)$ 作为 $Q_{new}(S_t,A_t)$ 的 Bootstrap 估计值，此时的算法更新式为
+在强化学习的实际应用中，需要为行动价值函数 $\widehat{Q}(S_t,A_t)$ 指定一个具体的估计值。由于在更新过程中，后一次行动的决策更倾向于选择前一次价值 $Q$ 更大的行动，因此最直观的考虑是选取 $\max_a Q_{old}(S_t,a)$ 作为 $Q_{new}(S_t,A_t)$ 的 Bootstrap 估计值，此时的算法更新式为
 
 \begin{equation}\label{eq:qlearning}
     Q(S_t,A_t)\leftarrow Q(S_t,A_t)+\alpha\left[R_{t+1}+\gamma  \max\limits_aQ(S_{t+1},a)-Q(S_t,A_t)\right]
 \end{equation}
 
-称使用了该更新式的强化学习算法为{\jiacu Q-Learning 算法}。
+由于该算法以行动价值函数 $Q(s,a)$ 为核心，基于这一评估指标进行各种决策学习，故称使用了该更新式的强化学习算法为{\jiacu\ Q-Learning 算法}。Q-Learning 算法的详细流程如下：
 
 \begin{algorithm}[H]
     \caption{Q-Learning 算法}
@@ -120,7 +125,7 @@ Monte Carlo 算法的价值函数更新式为
 
 \subsection{$\varepsilon$-贪心 Q-Learning 算法}
 
-在前面的算法中，我们在得到价值函数之后，都是直接对其取 $\arg\max$ 来作为最优策略，这是完全的贪心学习，初期如果过于贪心去信赖尚不完善的价值函数，容易导致策略收敛在局部最优值，所以需要将贪心的程度适当降低，于是提出下面的 $\varepsilon$-贪心学习算法
+在前面的算法中，我们在得到价值函数之后，都是直接对其取 $\arg\max$ 来作为最优策略，这是完全的贪心学习\cite{edmonds1971matroids}，初期如果过于贪心去信赖尚不完善的价值函数，容易导致策略收敛在局部最优值，所以需要将贪心的程度适当降低，于是提出下面的 $\varepsilon$-贪心学习算法
 
 \begin{Definition}
     在强化学习中，若决策者以 $1-\varepsilon(0<\varepsilon<1)$ 的概率采取贪心行动，以 $\varepsilon$ 的概率随机选择一个行动 $a$ ，称这样的学习方法为 $\varepsilon$-贪心学习算法。
@@ -139,7 +144,8 @@ Monte Carlo 算法的价值函数更新式为
             1-\varepsilon-\frac{\varepsilon}{|\mathcal A(s)|}&, a\text{为贪心行动}
         \end{cases}
     \end{equation}
-称这样的策略 $\pi$ 是 $\varepsilon$-贪心策略。
+
+其中 $|\mathcal{A}(s)|$ 表示行动空间 $\mathcal{A}(s)$ 中的元素个数。称这样的策略 $\pi$ 是 $\varepsilon$-贪心策略。
 \end{Definition}
 
 下面证明，将非贪心行动的概率逐渐降低、贪心行动的概率逐渐提高，能够提高期望价值函数。
@@ -195,7 +201,7 @@ Monte Carlo 算法的价值函数更新式为
     证毕。
 \end{proof}
 
-因此证得，将非贪心行动的概率逐渐降低、贪心行动的概率逐渐提高，能够提高期望价值函数，从而若将$\varepsilon$-贪心策略与 Q-Learning 算法结合，由于$\varepsilon$-贪心策略有着较好的跳出局部最优点的性质，且因期望价值函数的逐渐提高能够确保算法的收敛性，便能做到既提升算法跳出局部最优点的鲁棒性，同时也促进算法的收敛性。结合后的算法流程如下：
+因此证得，将非贪心行动的概率逐渐降低、贪心行动的概率逐渐提高，能够提高期望价值函数，从而若将$\varepsilon$-贪心策略与 Q-Learning 算法结合，由于$\varepsilon$-贪心策略有着较好的跳出局部最优点的性质，且因 Q-Learning 算法下期望价值函数的逐渐提高能够确保算法的收敛性，便能做到既提升算法跳出局部最优点的鲁棒性，同时也促进算法的收敛性。两种方法相结合后的算法流程如下：
 
 \begin{algorithm}[H]
     \caption{基于 Q-Learning 的 $\varepsilon$-贪心强化学习算法}
@@ -226,25 +232,25 @@ Monte Carlo 算法的价值函数更新式为
 
 \chapter{基于 Q-Learning 的机器学习方法}
 
-在 Q-Learning 中，主要目的是通过更新式 \ref{eq:qlearning} 来逼近最优行动值函数 $Q^*(s,a)$ 。具体地，在每一步中用新的估计值 $r+\gamma \max_aQ(s,a)$ 来逼近 $Q(s,a)$ ，注意到，$Q$ 函数的参数 $s\in\mathcal S, a\in\mathcal A$ 所在的参数空间都很大，逐个更新的效率很低，使得该算法实用性并不高。为了提高算法效率，提升算法的实用性，应当将函数参数化后，使用机器学习方法进行更新和训练，结合深度神经网络来训练 $Q$ 函数。
+在 Q-Learning 算法中，主要目的是通过更新式 \ref{eq:qlearning} 来逼近最优行动值函数 $Q^*(s,a)$ 。具体地，在每一步中用新的估计值 $r+\gamma \max_aQ(s,a)$ 来逼近 $Q(s,a)$ ，注意到，$Q$ 函数的参数 $s\in\mathcal S, a\in\mathcal A$ 所在的参数空间都很大，对参数进行逐个更新的效率很低，使得该算法实用性并不高。为了提高算法效率，提升算法的实用性，应当将函数参数化后，使用机器学习方法进行更新和训练，结合深度神经网络来训练 $Q$ 函数。
 
 \section{梯度下降 Q-Learning 算法}
 
-首先将价值函数 $Q$ 参数化，设其参数为 $\boldsymbol{w}$ ，记参数化的价值函数为 $\widehat{Q}(s,a,\boldsymbol{w})$。为了使参数化的价值函数 $\widehat{Q}$ 能逼近真实价值函数 $Q$ ，仍以强化学习中的核心算法 Q-Learning 作为更新公式，在其基础上使用梯度下降法\cite{tsitsiklis1997analysis}\cite{bottou2010large}\cite{sutton2009fast}。
+首先将价值函数 $Q$ 参数化，设其参数为 $\boldsymbol{w}$ ，记参数化的价值函数为 $\widehat{Q}(s,a,\boldsymbol{w})$。为了使参数化的价值函数 $\widehat{Q}$ 能逼近真实价值函数 $Q$ ，仍以 Q-Learning 算法的更新公式为核心，在其基础上使用梯度下降法\cite{tsitsiklis1997analysis}\cite{bottou2010large}\cite{sutton2009fast}。
 
-在 Q-Learning 梯度下降法中，以更新前后的价值函数均方误差为损失函数，定义为
+在 Q-Learning 梯度下降法中，以更新前后的行动价值函数均方误差为损失函数，定义为
 
 \begin{equation}
     J(\boldsymbol{w}) = \frac{1}{2}\left[R_{t+1}+\gamma\max_a\widehat{Q}(S_{t+1},a,\boldsymbol{w})-\widehat{Q}(S_t,A_t,\boldsymbol{w})\right]^2
 \end{equation}
 
-根据梯度下降法，以优化降低损失函数 $J(\boldsymbol(w))$ 为目标进行更新，其更新式为
+根据梯度下降法，以优化降低损失函数 $J(\boldsymbol{w})$ 为目标进行更新，其更新式为
 
 \begin{equation}\label{eq:qlearninggrad}
 \begin{aligned} \boldsymbol{w}_{t+1} =&\boldsymbol{w}_{t}-\alpha\nabla J(\boldsymbol{w}) \\ =&\boldsymbol{w}_{t}+\alpha\left[R_{t+1} - \gamma \max _{a} \widehat{Q}\left(S_{t+1}, a, \boldsymbol{w}_{t}\right)-\widehat{Q}\left(S_{t}, A_{t}, \boldsymbol{w}_{t}\right)\right]\\&\times\left[\gamma\nabla \max _{a} \widehat{Q}\left(S_{t+1}, a, \boldsymbol{w}_{t}\right)-\nabla \widehat{Q}\left(S_{t}, A_{t}, \boldsymbol{w}_{t}\right)\right] \end{aligned}
 \end{equation}
 
-其中，$\alpha$ 是梯度下降法中的更新速率，用来控制梯度更新的速度。最终更新停止后得到的 $\boldsymbol{w}^*$ 即可用以还原出参数化的价值函数 $\widehat{Q}^*(s,a,\boldsymbol{w}^*)$ ，进而可以给出决策函数 $\pi$ 。
+其中，$\alpha$ 是梯度下降法中的更新速率，用来控制梯度更新的速度。最终更新停止后得到的 $\boldsymbol{w}^*$ 即可用以还原出参数化的价值函数 $\widehat{Q}^*(s,a,\boldsymbol{w}^*)$ ，进而可以给出决策函数 $\pi$ 。可将 $\varepsilon$-贪心学习与梯度下降 Q-Learning 算法相结合，详细的算法流程如下：
 
 \begin{algorithm}[H]
     \caption{$\varepsilon$-贪心梯度下降 Q-Learning 算法}
@@ -287,11 +293,11 @@ Monte Carlo 算法的价值函数更新式为
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.75\textwidth]{DQN-show.pdf}
+    \includegraphics[width=0.5\textwidth]{DQN-show.pdf}
     \caption{Deep Q-Network 示意图}
 \end{figure}
 
-如上图所示，将数据集里的状态和行动作为特征向量输入进神经网络的输入层，基于参数化的 Q-Learning 公式
+如上图所示，将实时数据流中的状态和行动作为特征向量传入神经网络的输入层，基于参数化的 Q-Learning 公式
 
 \begin{equation}
 \begin{aligned} \boldsymbol{w}_{t+1} =&\boldsymbol{w}_{t}-\alpha\nabla J(\boldsymbol{w}) \\ =&\boldsymbol{w}_{t}+\alpha\left[R_{t+1} - \gamma \max _{a} \widehat{Q}\left(S_{t+1}, a, \boldsymbol{w}_{t}\right)-\widehat{Q}\left(S_{t}, A_{t}, \boldsymbol{w}_{t}\right)\right]\\&\times\left[\gamma\nabla \max _{a} \widehat{Q}\left(S_{t+1}, a, \boldsymbol{w}_{t}\right)-\nabla \widehat{Q}\left(S_{t}, A_{t}, \boldsymbol{w}_{t}\right)\right] \end{aligned}
@@ -301,18 +307,18 @@ Monte Carlo 算法的价值函数更新式为
 
 在实际的应用场景中，不完全信息博弈常为多人对战类游戏，因此需要针对性地优化前面所描述的 Q-Learning 算法。
 
-在 Q-Learning 中，基于 Bootstrap 思想，采用了 $\max_aQ(s,a)$ 作为 $Q(s,a)$ 的更新估计值，但在神经网络中大量使用 $\max$ 函数会带来一定的偏差值，为了解决这一问题，需要使用两个神经网络交替使用来抵消这一偏差值。
+在 Q-Learning 中，基于 Bootstrap 思想，采用了 $\max_aQ(s,a)$ 作为 $Q(s,a)$ 的更新估计值，但在神经网络中大量使用 $\max$ 函数会带来一定的偏差值，带来决策误差。为了解决这一问题，需要使用两个神经网络交替使用来抵消这一偏差值。
 
 \begin{Theorem}\label{the:doubledqn}
-    记两个独立的 Deep Q-Network 分别为 $Q_1,Q_2$ ，并假定他们能无偏估计真实值，即满足条件 $\mathbb{E}\left[Q_1(s,a)\right] = q(s,a)$，$\mathbb{E}\left[Q_2(s,a)\right] = q(s,a)$ 。若使用 $Q_1$ 来参与行为决策，使用 $Q_2$ 来为相应的行为进行评估，最终得到的评价值为真实值的无偏估计。
+    记两个独立的 Deep Q-Network 分别为 $Q_1,Q_2$ ，并假定他们能无偏估计真实值，即满足条件 $\mathbb{E}\left[Q_1(s,a)\right] = q(s,a)$，$\mathbb{E}\left[Q_2(s,a)\right] = q(s,a)$ 。若使用 $Q_1$ 来参与行为决策，使用 $Q_2$ 来为相应的行为进行评估，最终所得到的评价值则为真实值的无偏估计。
 \end{Theorem}
 
 \begin{proof}
-    $Q_1$ 用于行为决策，设 $A^*$ 为 $Q_1$ 决策出的最优策略，即有 $A^*=\mathop{\arg\max}\limits_aQ_1(a)$，此时 $A^*$ 的评价指标为
+    由题设，$Q_1$ 用于行为决策，设 $A^*$ 为 $Q_1$ 决策出的最优策略，即有 $A^*=\mathop{\arg\max}\limits_aQ_1(a)$，此时 $A^*$ 的评价指标为
     \begin{equation}
         Q_2(S,\mathop{\arg\max}\limits_aQ_1(a)) = Q_2(S,A^*)
     \end{equation}
-    根据条件
+    根据题设条件
     \begin{equation}
         \mathbb{E}\left[Q_2(s,a)\right] = q(s,a)
     \end{equation}
@@ -325,12 +331,12 @@ Monte Carlo 算法的价值函数更新式为
 
 因此根据定理 \ref{the:doubledqn} ，可以通过构建两个神经网络交替使用来抵消偏差值，使评估指标为真实值的无偏估计，从而可以确保在该评估体系下能够训练和学习出恰当的博弈策略。
 
-在不完全信息博弈的实际应用场景中，会有 $N$ 名不同风格的选手对战，为了加强算法的自适应性和鲁棒性，需要进一步将 Deep Q-Network 模型分离为 $2N$ 个不同的神经网络，通过共同学习来消除对手风格带来的影响，如下图所示。
+在不完全信息博弈的实际应用场景中，会有 $N$ 名不同风格的选手对战，为了加强算法的自适应性和鲁棒性，需要进一步将 Deep Q-Network 模型分离为 $2N$ 个不同的神经网络，通过共同学习来消除因不同对手风格差异带来的影响，如下图所示。
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.8\textwidth]{Multi-DQN.pdf}
-    \caption{自适应 Deep Q-Network (此图中 N=3)}
+    \includegraphics[width=0.6\textwidth]{Multi-DQN.pdf}
+    \caption{自适应 Deep Q-Network (N=3)}
 \end{figure}
 
-如上图所示，通过为每位选手分配一对 Deep Q-Network 之后，依次进行模拟博弈训练，基于训练数据执行 Deep Q-Learning 算法，通过前面的证明可知，这样的算法能够收敛得到 $Q(s,a)$ 函数的无偏估计值，便可基于估计函数 $\widehat{Q}(s,a)$ 推出最优策略 $\pi$ 。称这样的算法为{\jiacu 自适应 Deep Q-Learning 算法}。
+如上图所示（图中 $N=3$），通过为每位选手分配一对 Deep Q-Network 之后，依次进行模拟博弈训练，基于训练数据执行 Deep Q-Learning 算法，通过前面的证明可知，这样的算法能够收敛得到 $Q(s,a)$ 函数的无偏估计值，便可基于估计函数 $\widehat{Q}(s,a)$ 推出最优策略 $\pi$ 。由于算法能够自适应地根据玩家数量调整网络参数，且每个玩家学习模型下的双神经网络能够自适应地准确消除各自的偏差，故称这样的算法为{\jiacu 自适应 Deep Q-Learning 算法}。
