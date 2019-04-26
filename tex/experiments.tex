@@ -9,7 +9,7 @@
 
 \subsection{纸牌游戏的背景与规则介绍}
 
-在本游戏中，初始牌面会去掉 “红桃2”、“梅花2”、“方块2”、“黑桃A”这 4 张牌，共计 48 张牌，每人发牌 16 张。第一回合由持手牌“黑桃3”的玩家出牌，随后依逆时针顺序跟牌，且要求在能出牌的情况下必须出牌，不可直接过牌。
+在本游戏中共有三位玩家进行对战博弈，发牌前会从初始牌面中去掉 “红桃2”、“梅花2”、“方块2”、“黑桃A”这 4 张牌，共计 48 张牌，每人发牌 16 张。发牌后，第一回合由持手牌“黑桃3”的玩家出牌，随后依逆时针顺序跟牌，且要求在能出牌的情况下必须出牌，不可直接过牌。
 
 作为第一位玩家出牌时，可任意选择牌型出牌，而跟牌阶段则只能按规则在指定牌型下出牌，最先将手牌出完的玩家为胜者。
 
@@ -20,7 +20,8 @@
 \begin{tabular}{c|c|c|c}
     \toprule[2pt]
     {\jiacu\heiti 牌型简称} & {\jiacu\heiti 牌型描述} & {\jiacu\heiti 牌型简称} & {\jiacu\heiti 牌型描述} \\
-    \midrule[2pt]
+    % \midrule[2pt]
+    \hline
     对子 & 两张相同的牌 & 三条 & 三张相同的牌 \\
     % \hline
     炸弹 & 四张相同牌 & 三带一 & 三条+单牌 \\
@@ -32,8 +33,9 @@
     飞机 & 至少2组连续三带二 & 四带二 & 炸弹+任意两张牌\\
     \bottomrule[2pt]
 \end{tabular}
-
 \end{center}
+
+该纸牌游戏规则下，由于每轮出牌后具有动态不确定性，因此该游戏属于不完全信息博弈。
 
 \subsection{模拟建立的纸牌游戏环境}
 
@@ -51,15 +53,21 @@
 
 \subsection{Deep Q-Network 算法实现细节}
 
-在 \texttt{DQN.py} 中，定义一个 \texttt{QNet} 类，建立一个全连接神经网络，其深度为 3 层。Input layer 有 209 个神经元，对应输入特征向量的 209 个元素；Hidden layer 1 有 512 个神经元；Hidden layer 2 有 256 个神经元；Hidden layer 3 有 128 个神经元；Output layer 只有一个神经元，其输出值为 $Q$ 函数所对应的值，如下图所示。
+在 \texttt{DQN.py} 中，定义一个 \texttt{QNet} 类，建立一个全连接神经网络，其深度为 4 层。输入层有 209 个神经元，对应输入特征向量的 209 个元素；隐藏层 1 有 512 个神经元；隐藏层 2 有 256 个神经元；隐藏层 3 有 128 个神经元；隐藏层 4 有 64 个神经元；输出层只有一个神经元，其输出值为 $Q$ 函数所对应的值。
+
+在输入层和三个隐藏层之间都加入了 ReLU 线性整流单元\cite{li2017convergence}作为激励函数，其表达式为 $\mathrm{ReLU}(x) = \max(0,x)$。
+
+同时也在这些连接层中加入了 DropOut 机制，它可以通过随机丢弃一些中间结果来有效防止过拟合\cite{srivastava2014dropout}。
+
+完整的神经网络结构如下图所示：
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.8\textwidth]{DQN-Detail.pdf}
+    \includegraphics[width=0.9\textwidth]{DQN-Detail.pdf}
     \caption{Deep Q-Network 实现细节}
 \end{figure}
 
-此外还定义了一个 \texttt{DQN} 类，用来实现 Deep Q-Network 的细节。其中，\texttt{DQN.choose\_action()} 函数代表策略函数 $\pi$ ，其功能是根据输入的状态 $s$ ，根据 $Q$ 函数大小决定的策略概率分布 $\pi(a|s)$ 来决定下一步应采取的行动 $a$ ，其中
+在 \texttt{DQN.py} 中还定义了一个 \texttt{DQN} 类，用以实现 Deep Q-Learning 的细节。其中，\texttt{DQN.choose\_action()} 函数代表策略函数 $\pi$ ，输入的状态 $s$ 后，根据 $Q$ 函数大小决定的策略概率分布 $\pi(a|s)$ 来决定下一步应采取的行动 $a$ ，其中
 
 \begin{equation}
     \pi(a|s)=
@@ -69,7 +77,9 @@
     \end{cases}
 \end{equation}
 
-\texttt{DQN.store\_transition()} 函数和 \texttt{DQN.add\_reward()} 函数用于将模拟过程中的一些关键信息存储于缓存中；\texttt{DQN.learn()} 函数的作用是将缓存的信息提取出来，通过神经网络进行 Q-Learning 更新，更新公式为
+\texttt{DQN.store\_transition()} 函数和 \texttt{DQN.add\_reward()} 函数用于将模拟过程中的一些关键信息存储于缓存中.
+
+\texttt{DQN.learn()} 函数的作用是将缓存的信息提取出来，通过神经网络进行 Q-Learning 更新，更新公式为
 
 \begin{equation}
     \widehat{Q}(S_t,A_t,\boldsymbol{w})\leftarrow \widehat{Q}(S_t,A_t,\boldsymbol{w})+\alpha\left[R_{t+1}+\gamma  \max\limits_a \widehat{Q}(S_{t+1},a,\boldsymbol{w})-\widehat{Q}(S_t,A_t,\boldsymbol{w})\right]
@@ -81,7 +91,7 @@
 
 在前面所建立的仿真实验环境 \texttt{RunFastGameEnv} 中，由于是三人不完全信息博弈，即有 $N=3$，故总共需要建立六个 Deep Q-Network，每位玩家分配两个神经网络。
 
-由于自适应 Deep Q-Learning 算法能够抵消估计偏差值，因此可以使用风格不同的三位玩家模型进行博弈训练，而风格差异化能够增加训练模型的鲁棒性，增强模型处理不确定性状态的能力。记三名玩家为分别为 $A,B,C$ ，其中 $A$ 玩家对应的模型为主训练模型，玩家 $B,C$ 为辅助学习模型，通过调整贪心率 $\varepsilon$ 使得辅助学习模型的决策水平与主训练模型形成差异化。其中 $\varepsilon_B = \frac{\varepsilon_A}{2}$ ，$\varepsilon_C = \frac{\varepsilon_A}{3}$。
+由于自适应 Deep Q-Learning 算法能够抵消估计偏差值，因此可以使用风格不同的三位玩家模型进行博弈训练，而风格差异化能够增加训练模型的鲁棒性，增强模型处理不确定性状态的能力。记三名玩家为分别为 $A,B,C$ ，其中 $A$ 玩家对应的模型为主训练模型，玩家 $B,C$ 为辅助学习模型，通过调整贪心率 $\varepsilon$ 使得辅助学习模型的决策水平与主训练模型形成差异化。其中 $\varepsilon_B = \varepsilon_A / 2$ ，$\varepsilon_C = \varepsilon_A / 3$。
 
 此外，为了加速强化学习的学习效率，将算法中的贪心学习率 $\varepsilon$ 进行了动态调整，从初始值 $\varepsilon_0 = 0.4$ 随训练次数线性下降，每个 epoch 下降 0.01，达到预设的下限阈值 $\varepsilon_{stop} = 0.08$ 后停止动态调整。
 
@@ -107,7 +117,7 @@
     \end{algorithmic}
 \end{algorithm}
 
-实验的流程图如下：
+实验的完整流程图如下所示：
 
 \begin{figure}[H]
     \centering
@@ -117,25 +127,25 @@
 
 \section{仿真实验结果与分析}
 
-在 $\mathrm{NVIDIA}^\circledR$ GTX 1080 GPU 的硬件条件下，经过 50 万局自我对战学习（其中每 1000 局作为一个 epoch 集中学习），最终决策函数 $Q$ 得到如下图所示的收敛情况。
+在 $\mathrm{NVIDIA}^\circledR$ GTX 1080 GPU 的硬件条件下，经过 100 万余局自我对战学习（其中每 2000 局作为一个 epoch 集中学习），最终决策函数 $Q$ 得到如下图所示的收敛情况。
 
 \begin{figure}[H]
 	\centering
-	\begin{subfigure}{0.45\textwidth} % width of left subfigure
+	\begin{subfigure}{0.49\textwidth} % width of left subfigure
 		\includegraphics[width=\textwidth]{q-value.pdf}
 		\caption{Q 函数训练均值}\label{img:q-value} % subcaption
 	\end{subfigure}
 	\vspace{1em} % here you can insert horizontal or vertical space
-	\begin{subfigure}{0.45\textwidth} % width of right subfigure
+	\begin{subfigure}{0.49\textwidth} % width of right subfigure
 		\includegraphics[width=\textwidth]{train-loss.pdf}
 		\caption{Q-Learning 训练误差值}\label{img:train-loss} % subcaption
 	\end{subfigure}
 	\caption{仿真实验的训练结果} % caption for whole figure
 \end{figure}
 
-由图\ref{img:q-value}，经过自适应 Deep Q-Learning 算法训练可使行动价值函数 $Q(s,a)$ 收敛，进而可以得到 $\varepsilon$-贪心策略：
+图\ref{img:q-value}刻画的是 Q 函数随训练次数的均值，观察可知经过该算法训练可使行动价值函数 $Q(s,a)$ 收敛，进而可以得到 $\varepsilon$-贪心策略：
 
-\begin{equation}
+\begin{equation}\label{eq:epspolicy}
     \pi(a|s)=
     \begin{cases}
         \frac{\varepsilon}{|\mathcal A(s)|}&, a\neq\arg\max_aQ(s,a)\\
@@ -156,26 +166,34 @@
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.8\textwidth]{win-rate.pdf}
+    \includegraphics[width=0.57\textwidth]{win-rate.pdf}
     \caption{Q 函数与实时训练胜率}\label{img:win-rate}
 \end{figure}
 
-在训练中，还统计了三个玩家模型的实时胜率，如图\ref{img:win-rate}所示，可见在训练过程中，自适应 Deep Q-Learning 算法的主训练模型胜率不断上升，远优于另外两个辅助学习模型，显然自适应 Deep Q-Learning 算法通过强化学习的思想学习和掌握了一定程度的游戏技巧。
+图\ref{img:win-rate}展现了三个玩家模型在训练中的实时胜率，观察发现其在训练过程中，自适应 Deep Q-Learning 算法的主训练模型胜率不断上升，远优于另外两个辅助学习模型，显然自适应 Deep Q-Learning 算法通过强化学习的思想学习和掌握了一定程度的游戏技巧。
+
+为了验证自适应 Deep Q-Learning 的实际学习效果，使用训练出的策略模型进行了独立测试，通过调整算法中的贪心率 $\varepsilon$ ，从而影响到最终的实际决策策略 $\pi$ ，如\ref{eq:epspolicy}式所示。独立测试的结果如下：
 
 \begin{table}[H]
-\caption{Multi-column table}
+\caption{独立测试结果}
 \begin{center}
-\begin{tabular}{c|c|c|c|c|c}
+\scalebox{0.8}{
+\begin{tabular}{cc|cc|cc}
     \toprule[2pt]
-    \multicolumn{2}{c|}{主模型 A}&\multicolumn{2}{c}{辅助模型 B}&\multicolumn{2}{c}{辅助模型 C}\\
-    % \hline
-    $\varepsilon_A$&胜率&$\varepsilon_B$&胜率&$\varepsilon_C$&胜率\\
-    \midrule[2pt]
-    0.111&0.222&0.333&0.444&0.555&0.666\\
-    % \hline
-    0.111&0.222&0.333&0.444&0.555&0.666\\
+    \multicolumn{2}{c|}{主模型 A}&\multicolumn{2}{c|}{辅助模型 B}&\multicolumn{2}{c}{辅助模型 C}\\
+    \hline
+    \multicolumn{1}{c|}{$1-\varepsilon_A$}&\multicolumn{1}{c|}{胜率}&\multicolumn{1}{c|}{$1-\varepsilon_B$}&\multicolumn{1}{c|}{胜率}&\multicolumn{1}{c|}{$1-\varepsilon_C$}&\multicolumn{1}{c}{胜率}\\
+    \hline
+    0.99&0.662&0.99&0.165&0.99&0.173\\
+    0.99&0.685&0.90&0.158&0.90&0.157\\
+    0.95&0.621&0.80&0.191&0.80&0.188\\
+    0.95&0.646&0.70&0.173&0.70&0.181\\
+    0.90&0.558&0.60&0.221&0.60&0.221\\
+    0.90&0.583&0.50&0.207&0.50&0.210\\
     \bottomrule[2pt]
-\end{tabular}
+\end{tabular}}
 \end{center}
-\label{tab:multicol}
+\label{tab:testresult}
 \end{table}
+
+基于独立测试结果，发现主训练模型在各种贪心率下相比于辅助训练模型均有着明显的策略优势，因此可以得出结论：自适应 Deep Q-Learning 算法能够有效处理不完全信息博弈问题。

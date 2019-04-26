@@ -103,7 +103,7 @@
   \def\chaptername{\CJKnumber{\arabic{chapter}}、}
   \def\thesection{（\CJKnumber{\arabic{section}}）}
   \def\thesubsection{\arabic{subsection}.}
-  \def\contentsname{目录}
+  \def\contentsname{目\hskip 1em录}
   \def\appendixnamenonumber{附录}
   \def\nkrefname{参考文献}
   \def\tablename{表}
@@ -183,10 +183,14 @@
 
 \def\sectionspecial{\jiacu}
 \def\partformat{\centering\huge\bfseries}
-\def\chapterformat{\centering\fontsize{16}{19}\bfseries\jiacu}
-\def\sectionformat{\centering\bfseries\zihaosi}
-\def\subsectionformat{\bfseries\fontsize{13}{15}\selectfont}
-\def\subsubsectionformat{\bfseries\zihaowu}
+% \def\chapterformat{\centering\fontsize{16}{19}\bfseries\jiacu}
+% \def\sectionformat{\centering\bfseries\zihaosi}
+% \def\subsectionformat{\bfseries\fontsize{13}{15}\selectfont}
+% \def\subsubsectionformat{\bfseries\zihaowu}
+\def\chapterformat{\centering\bfseries\jiacu\zihaoxiaosan\heiti}
+\def\sectionformat{\centering\bfseries\jiacu\zihaosi\heiti}
+\def\subsectionformat{\bfseries\jiacu\zihaoxiaosi\heiti}
+\def\subsubsectionformat{\bfseries\jiacu\zihaoxiaosi\heiti}
 
 
 \def\chapter{
@@ -472,10 +476,11 @@
 
 \NKT@definezihao{\zihaochu}{42}{50}
 \NKT@definezihao{\zihaoxiaochu}{36}{44}
-\NKT@definezihao{\zihaoyi}{28}{34}
+\NKT@definezihao{\zihaoyi}{26}{34}
 \NKT@definezihao{\zihaoer}{22}{26}
 \NKT@definezihao{\zihaoxiaoer}{18}{22}
-\NKT@definezihao{\zihaosan}{15.7}{19}
+\NKT@definezihao{\zihaosan}{16}{19}
+\NKT@definezihao{\zihaoxiaosan}{15}{19}
 \NKT@definezihao{\zihaosi}{14}{17}
 \NKT@definezihao{\zihaoxiaosi}{12}{14}
 \NKT@definezihao{\zihaowu}{10.5}{12}
