@@ -1,5 +1,10 @@
 
 % -*- coding: utf-8 -*-
+% !TEX encoding = UTF-8 Unicode
+% !TEX program = xelatex
+% !BIB program = biber
+% !TEX TS-program = xelatex
+% !BIB TS-program = biber
 %%
 %%
 %%
@@ -53,7 +58,7 @@
 \usepackage{algpseudocode}
 \floatname{algorithm}{算法}
 \usepackage{float}
-%\usepackage{inconsolata}
+\usepackage{pdfpages}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \addbibresource{nkthesis.bib}
@@ -118,7 +123,7 @@
   通讯地址(邮编) = 天津市南开区卫津路94号(300071),
   备注           = }
 
-
+\includepdf[pages={1,2}]{./image/cover.pdf}
 \include{./tex/abstract}
 \tableofcontents
 \include{./tex/introduction}

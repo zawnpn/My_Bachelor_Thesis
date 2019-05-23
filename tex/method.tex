@@ -143,7 +143,7 @@ Monte Carlo 算法的价值函数更新式为
         \pi(a|s)=
         \begin{cases}
             \frac{\varepsilon}{|\mathcal A(s)|}&, a\text{为非贪心行动}\\
-            1-\varepsilon-\frac{\varepsilon}{|\mathcal A(s)|}&, a\text{为贪心行动}
+            1-\varepsilon+\frac{\varepsilon}{|\mathcal A(s)|}&, a\text{为贪心行动}
         \end{cases}
     \end{equation}
 
@@ -158,7 +158,7 @@ Monte Carlo 算法的价值函数更新式为
         \pi'(a|s)=
         \begin{cases}
             \frac{\varepsilon}{|\mathcal A(s)|}&, a\text{为非贪心行动}\\
-            1-\varepsilon-\frac{\varepsilon}{|\mathcal A(s)|}&, a\text{为贪心行动}
+            1-\varepsilon+\frac{\varepsilon}{|\mathcal A(s)|}&, a\text{为贪心行动}
         \end{cases}
     \end{equation}
     而改进前的策略为
@@ -221,7 +221,7 @@ Monte Carlo 算法的价值函数更新式为
         \If{$a\neq A^*$}
         \State $\pi(a|s)\leftarrow \frac{\varepsilon}{|\mathcal A(s)|}$
         \Else
-        \State $\pi(a|s)\leftarrow 1-\varepsilon-\frac{\varepsilon}{|\mathcal A(s)|}$
+        \State $\pi(a|s)\leftarrow 1-\varepsilon+\frac{\varepsilon}{|\mathcal A(s)|}$
         \EndIf
         \EndFor
         \State $S\leftarrow S'$
@@ -278,7 +278,7 @@ Monte Carlo 算法的价值函数更新式为
         \If{$a\neq A^*$}
         \State $\pi(a|s)\leftarrow \frac{\varepsilon}{|\mathcal A(s)|}$
         \Else
-        \State $\pi(a|s)\leftarrow 1-\varepsilon-\frac{\varepsilon}{|\mathcal A(s)|}$
+        \State $\pi(a|s)\leftarrow 1-\varepsilon+\frac{\varepsilon}{|\mathcal A(s)|}$
         \EndIf
         \EndFor
         \State $S\leftarrow S'$
